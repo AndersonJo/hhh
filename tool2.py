@@ -228,6 +228,25 @@ def load_mnist_small(n_train: int = 2000, n_test: int = 500, flatten: bool = Fal
     return Xtr, ytr, Xte, yte
 
 
+def load_cifar100_small(n_train: int = 2000, n_test: int = 500, seed: int = 0):
+    """Small CIFAR-100 subset as torch tensors. Returns (Xtr, ytr, Xte, yte)."""
+    if not HAS_TORCH:
+        raise RuntimeError("PyTorch is required.")
+    from torchvision import datasets, transforms
+    tfm = transforms.ToTensor()
+    root = os.environ.get("CIFAR100_ROOT", "./data")
+    tr = datasets.CIFAR100(root, train=True, download=True, transform=tfm)
+    te = datasets.CIFAR100(root, train=False, download=True, transform=tfm)
+    rng = np.random.RandomState(seed)
+    tr_idx = rng.choice(len(tr), n_train, replace=False)
+    te_idx = rng.choice(len(te), n_test, replace=False)
+    Xtr = torch.stack([tr[i][0] for i in tr_idx])
+    ytr = torch.tensor([tr[i][1] for i in tr_idx], dtype=torch.long)
+    Xte = torch.stack([te[i][0] for i in te_idx])
+    yte = torch.tensor([te[i][1] for i in te_idx], dtype=torch.long)
+    return Xtr, ytr, Xte, yte
+
+
 def benchmark(fn: Callable, *args, **kwargs):
     """Run fn, return (result, seconds, peak_mb). Peak memory is CUDA-only; else NaN."""
     if HAS_TORCH and torch.cuda.is_available():
